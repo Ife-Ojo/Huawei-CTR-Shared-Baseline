@@ -103,7 +103,6 @@ def run_prediction_pipeline(output_csv_path: Optional[str] = None) -> str:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     
     # Verify inputs
-    assert eval_csv_path.exists(), f"Missing evaluation.csv at {eval_csv_path}"
     assert p12c_csv_path.exists(), f"Missing Phase 12C baseline submission at {p12c_csv_path}"
     
     # Load canonical feature schema
@@ -116,10 +115,22 @@ def run_prediction_pipeline(output_csv_path: Optional[str] = None) -> str:
     print(f"1. Canonical feature schema loaded ({len(canonical_98)} features).")
     
     # Load raw evaluation rowids and order
-    eval_raw = pd.read_csv(eval_csv_path, usecols=["rowid", "event_id"])
+    if eval_csv_path.exists():
+        eval_raw = pd.read_csv(eval_csv_path, usecols=["rowid", "event_id"])
+        print(f"2. Loaded evaluation metadata from {eval_csv_path} ({len(eval_raw):,} rows).")
+    else:
+        # Graceful fallback for fresh clones before evaluation.csv is manually placed:
+        # Reconstructs exact sequence from Phase 12C submission rowids and eval_features.parquet event_ids
+        print(f"2. Notice: data/raw/evaluation.csv not found (excluded from Git per competition rules).")
+        print(f"   Using canonical rowid sequence from outputs/phase12c_final_3model_champion_submission.csv")
+        print(f"   and event_id mapping from data/processed/features/eval_features.parquet.")
+        df_12c_rids = pd.read_csv(p12c_csv_path, usecols=["rowid"])
+        df_ev_map = pq.read_table(feat_dir / "eval_features.parquet", columns=["rowid", "event_id"]).to_pandas()
+        eval_raw = df_12c_rids.merge(df_ev_map, on="rowid")
+        
     assert len(eval_raw) == 529390, f"Expected 529,390 rows, got {len(eval_raw)}"
     n_eval_evs = len(eval_raw) // 10
-    print(f"2. Loaded evaluation metadata ({len(eval_raw):,} rows, {n_eval_evs:,} events).")
+    print(f"   Evaluation candidates verified: {len(eval_raw):,} rows across {n_eval_evs:,} events.")
     
     # Load Phase 12C Champion predictions
     df_champ = pd.read_csv(p12c_csv_path)
