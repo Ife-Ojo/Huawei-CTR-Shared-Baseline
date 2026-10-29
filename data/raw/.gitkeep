@@ -1,0 +1,3 @@
+# Place raw competition data here:
+# - evaluation.csv (required for inference metadata)
+# - train.csv (optional, for full retraining)

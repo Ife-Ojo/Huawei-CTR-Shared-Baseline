@@ -1,0 +1,33 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# IDE & Editor settings
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Massive competition raw data (>100MB; excluded from standard Git per rules)
+data/raw/*.csv
+!data/raw/.gitkeep
+data/processed/train_cands.parquet
+data/processed/train_events.parquet
+data/processed/train_daily/
+data/temp_duckdb/
+
+# Scratch and temporary debug scripts
+scratch/
+tmp/
+*.log
