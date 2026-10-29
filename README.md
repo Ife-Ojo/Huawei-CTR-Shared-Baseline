@@ -111,22 +111,60 @@ Huawei-CTR-Shared-Baseline/
 │   └── validate.py                    # Grouped and global AUC metrics
 ├── data/
 │   ├── raw/
-│   │   └── evaluation.csv             # Test evaluation metadata (529,390 rows)
+│   │   └── evaluation.csv             # Test evaluation metadata (excluded from Git; see Section 5)
 │   └── processed/
 │       └── features/
-│           ├── eval_98f_features.parquet   # Precomputed 98 candidate features
-│           ├── eval_features.parquet       # Precomputed base context features
+│           ├── eval_98f_features.parquet   # Precomputed 98 candidate features (Git LFS)
+│           ├── eval_features.parquet       # Precomputed base context features (Git LFS)
 │           └── svd_snapshots/
-│               ├── svd_asof_1737936000_k64_dmin2p0_s42.npz # Eval SVD snapshot
-│               └── svd_asof_1737849600_k64_dmin2p0_s42.npz # Jan 26 snapshot
+│               ├── svd_asof_1737936000_k64_dmin2p0_s42.npz # Eval SVD snapshot (Git LFS)
+│               └── svd_asof_1737849600_k64_dmin2p0_s42.npz # Jan 26 snapshot (Git LFS)
 └── outputs/
-    ├── phase12c_final_3model_champion_submission.csv        # Phase 12C base submission
-    └── phase15c_final_50pct_svd_event_intent_submission.csv # Official Champion Benchmark
+    ├── phase12c_final_3model_champion_submission.csv        # Phase 12C base submission (Git LFS)
+    └── phase15c_final_50pct_svd_event_intent_submission.csv # Official Champion Benchmark (Git LFS)
 ```
 
 ---
 
-## 5. One-Command Prediction & Reproduction
+## 5. Competition Data Policy & Setup (`data/raw/`)
+
+### Huawei Competition Rules Compliance:
+Under the official Huawei TechArena competition terms, participants are **prohibited from redistributing raw competition datasets** (`train.csv`, `evaluation.csv`) in shared or public git repositories. Accordingly, all raw CSV files are explicitly excluded via `.gitignore`.
+
+### Obtaining and Placing `evaluation.csv`:
+1. Log in to the official Huawei TechArena competition portal.
+2. Download the official evaluation file: `evaluation.csv`.
+3. Place the file inside your local clone at:
+   ```
+   Huawei-CTR-Shared-Baseline/data/raw/evaluation.csv
+   ```
+
+### Immediate Prediction Reproduction Without `evaluation.csv`:
+To ensure zero blockers for new team members:
+- The inference script (`scripts/predict_phase15c.py`) includes an automatic fallback mechanism.
+- It leverages the precomputed Parquet feature tables (`eval_98f_features.parquet` and `eval_features.parquet`) and the reference row sequencing from `outputs/phase12c_final_3model_champion_submission.csv` (both tracked via Git LFS).
+- Therefore, **you can run full Phase 15C prediction reproduction immediately upon cloning, even before obtaining `evaluation.csv`**.
+- When `data/raw/evaluation.csv` is added, the script detects it automatically and validates candidate counts against it.
+
+---
+
+## 6. Three-Tier Reproducibility Scope: What Can & Cannot Be Rebuilt
+
+To prevent any ambiguity during development, the repository's capabilities are divided into three clear operational tiers:
+
+| Tier | Capability | Status | Dependencies Needed | Output / Goal |
+|---|---|---|---|---|
+| **Tier A** | **Official Prediction Reproduction** | **Fully Supported (Out-of-the-Box)** | Cloned repo + Git LFS pull | Reproduces exact byte-for-byte SHA-256 match for Phase 15C Champion submission (`0e992d34...`) in ~10 seconds. |
+| **Tier B** | **Modular Component Retraining** | **Supported** | Precomputed feature caches in repo | Retrains or fine-tunes individual models (LightGBM, XGBoost, Choice model, SVD Event model) via `scripts/train_phase15c_models.py`. |
+| **Tier C** | **Full Raw-Data Pipeline Rebuilding** | **NOT Included (By Design)** | Multi-GB raw logs (`train.csv`), graph builders, GPU SVD | Rebuilding the full pipeline from raw clicks requires the 3.5GB `train.csv`, daily bipartite user-item graphs, full SVD decompositions, and days of compute. This baseline intentionally starts from validated feature caches. |
+
+### Summary of What Teammates Can Do Immediately:
+- **Can Do:** Run inference, reproduce official submission, evaluate on validation splits, train new candidate ranking models, experiment with new ensemble weights, adjust choice softmax temperatures, and explore new post-processing strategies.
+- **Cannot Do:** Re-extract features from raw `train.csv` or rebuild the historical SVD graphs from scratch without the raw multi-gigabyte training files.
+
+---
+
+## 7. One-Command Prediction & Reproduction
 
 To reproduce the official champion submission file directly:
 
@@ -163,7 +201,7 @@ python scripts/verify_submission_integrity.py outputs/phase15c_final_50pct_svd_e
 
 ---
 
-## 6. Development Workflow & Git Best Practices
+## 8. Development Workflow & Git Best Practices
 
 To keep the repository clean and avoid accidental overwrites of baseline checkpoints:
 
@@ -182,7 +220,7 @@ To keep the repository clean and avoid accidental overwrites of baseline checkpo
 
 ---
 
-## 7. Hardware & Memory Guidelines
+## 9. Hardware & Memory Guidelines
 
 - **Peak Memory**: ~1.5 GB RAM during inference; ~4.0 GB during model training.
 - **Inference Runtime**: ~10–12 seconds on an Intel i5 CPU with 4 worker threads.
